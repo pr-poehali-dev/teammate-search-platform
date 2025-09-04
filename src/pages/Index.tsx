@@ -6,6 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 
 type Game = 'dota' | 'cs' | 'valorant' | 'pubg';
@@ -22,6 +25,13 @@ interface Player {
   languages: string[];
   playStyle: string;
   availability: string;
+}
+
+interface Message {
+  id: string;
+  text: string;
+  sender: 'user' | 'player';
+  timestamp: Date;
 }
 
 const gameThemes = {
@@ -135,6 +145,10 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [minRating, setMinRating] = useState('');
   const [selectedRank, setSelectedRank] = useState('');
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
 
   const filteredPlayers = mockPlayers.filter(player => {
     const matchesGame = player.game === selectedGame;
@@ -156,11 +170,58 @@ const Index = () => {
     return ranks[game] || [];
   };
 
+  const sendMessage = () => {
+    if (!newMessage.trim() || !selectedPlayer) return;
+    
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: newMessage,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    
+    setMessages([...messages, userMessage]);
+    setNewMessage('');
+    
+    // Имитация ответа игрока
+    setTimeout(() => {
+      const responses = [
+        'Привет! Давай обсудим детали игры',
+        'Круто! Когда можем сыграть?',
+        'Отлично, я как раз искал тиммейта!',
+        'Давай созвонимся в дискорде?',
+        'Какой у тебя рейтинг?'
+      ];
+      
+      const playerMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: responses[Math.floor(Math.random() * responses.length)],
+        sender: 'player',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, playerMessage]);
+    }, 1000);
+  };
+
+  const openChat = (player: Player) => {
+    setSelectedPlayer(player);
+    setChatOpen(true);
+    setMessages([
+      {
+        id: '1',
+        text: `Привет! Я ${player.name}, рад познакомиться!`,
+        sender: 'player',
+        timestamp: new Date()
+      }
+    ]);
+  };
+
   const PlayerCard = ({ player }: { player: Player }) => {
     const theme = gameThemes[player.game];
     
     return (
-      <Card className={`group hover:scale-105 transition-all duration-300 ${theme.secondary} ${theme.border} border-2 hover:shadow-2xl hover:shadow-${player.game === 'dota' ? 'red' : player.game === 'cs' ? 'blue' : player.game === 'valorant' ? 'pink' : 'orange'}-500/25`}>
+      <Card className="group hover:scale-105 transition-all duration-300 bg-gray-800/50 border-gray-600 hover:shadow-2xl">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -209,10 +270,21 @@ const Index = () => {
               <span>{player.availability}</span>
             </div>
             
-            <Button size="sm" className={`${theme.primary} hover:opacity-90 text-white border-0`}>
-              <Icon name="UserPlus" size={16} className="mr-2" />
-              Пригласить
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline"
+                className={`${theme.border} ${theme.accent} border-2 hover:bg-gray-600`}
+                onClick={() => openChat(player)}
+              >
+                <Icon name="MessageCircle" size={14} className="mr-1" />
+                Чат
+              </Button>
+              <Button size="sm" className={`${theme.primary} hover:opacity-90 text-white border-0`}>
+                <Icon name="UserPlus" size={16} className="mr-2" />
+                Пригласить
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -220,158 +292,223 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-600/20 via-transparent to-blue-600/20" />
-        <div className="relative container mx-auto px-4 py-16 text-center">
-          <h1 className="text-6xl font-bold text-white mb-4 bg-gradient-to-r from-orange-400 to-blue-400 bg-clip-text text-transparent">
-            GAMING TEAMMATES
-          </h1>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Найди идеальную команду для побед в любимых играх. 
-            Подключайся к лучшим игрокам и покоряй рейтинговые лестницы вместе!
-          </p>
-          
-          <div className="flex justify-center space-x-4 mb-8">
-            <div className="flex items-center space-x-2 text-gray-300">
-              <Icon name="Users" size={20} />
-              <span>15,847+ игроков</span>
+    <>
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-600/20 via-transparent to-blue-600/20" />
+          <div className="relative container mx-auto px-4 py-16 text-center">
+            <h1 className="text-6xl font-bold text-white mb-4 bg-gradient-to-r from-orange-400 to-blue-400 bg-clip-text text-transparent">
+              GAMING TEAMMATES
+            </h1>
+            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+              Найди идеальную команду для побед в любимых играх. 
+              Подключайся к лучшим игрокам и покоряй рейтинговые лестницы вместе!
+            </p>
+            
+            <div className="flex justify-center space-x-4 mb-8">
+              <div className="flex items-center space-x-2 text-gray-300">
+                <Icon name="Users" size={20} />
+                <span>15,847+ игроков</span>
+              </div>
+              <div className="flex items-center space-x-2 text-gray-300">
+                <Icon name="Trophy" size={20} />
+                <span>2,341+ команд</span>
+              </div>
+              <div className="flex items-center space-x-2 text-gray-300">
+                <Icon name="Star" size={20} />
+                <span>4.9/5 рейтинг</span>
+              </div>
             </div>
-            <div className="flex items-center space-x-2 text-gray-300">
-              <Icon name="Trophy" size={20} />
-              <span>2,341+ команд</span>
-            </div>
-            <div className="flex items-center space-x-2 text-gray-300">
-              <Icon name="Star" size={20} />
-              <span>4.9/5 рейтинг</span>
-            </div>
+          </div>
+        </div>
+
+        {/* Game Selection */}
+        <div className="container mx-auto px-4 pb-8">
+          <Tabs value={selectedGame} onValueChange={(value) => setSelectedGame(value as Game)} className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-8 bg-gray-800 border border-gray-700">
+              {Object.entries(gameThemes).map(([game, theme]) => (
+                <TabsTrigger 
+                  key={game}
+                  value={game} 
+                  className="data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300 hover:scale-105"
+                >
+                  <span className="font-bold">{theme.name}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {Object.keys(gameThemes).map((game) => (
+              <TabsContent key={game} value={game}>
+                {/* Filters */}
+                <Card className="mb-8 bg-gray-800/50 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center">
+                      <Icon name="Filter" size={20} className="mr-2" />
+                      Фильтры поиска
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Поиск по имени</label>
+                        <Input
+                          placeholder="Введите имя игрока..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="bg-gray-700 border-gray-600 text-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Минимальный рейтинг</label>
+                        <Input
+                          type="number"
+                          placeholder="Например: 3000"
+                          value={minRating}
+                          onChange={(e) => setMinRating(e.target.value)}
+                          className="bg-gray-700 border-gray-600 text-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm text-gray-400 mb-2 block">Ранг</label>
+                        <Select value={selectedRank} onValueChange={setSelectedRank}>
+                          <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                            <SelectValue placeholder="Выберите ранг" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-700 border-gray-600">
+                            <SelectItem value="">Все ранги</SelectItem>
+                            {getRanksForGame(selectedGame).map(rank => (
+                              <SelectItem key={rank} value={rank} className="text-white hover:bg-gray-600">
+                                {rank}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="flex items-end">
+                        <Button 
+                          onClick={() => {
+                            setSearchTerm('');
+                            setMinRating('');
+                            setSelectedRank('');
+                          }}
+                          variant="outline"
+                          className="w-full bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
+                        >
+                          <Icon name="RotateCcw" size={16} className="mr-2" />
+                          Сбросить
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Players Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredPlayers.length > 0 ? (
+                    filteredPlayers.map((player) => (
+                      <PlayerCard key={player.id} player={player} />
+                    ))
+                  ) : (
+                    <div className="col-span-full text-center py-12">
+                      <Icon name="UserX" size={48} className="mx-auto mb-4 text-gray-500" />
+                      <h3 className="text-xl text-gray-400 mb-2">Игроки не найдены</h3>
+                      <p className="text-gray-500">Попробуйте изменить критерии поиска</p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+
+        {/* Stats Section */}
+        <div className="container mx-auto px-4 py-16">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[
+              { label: 'Активных игроков', value: '15,847', icon: 'Users', color: 'text-blue-400' },
+              { label: 'Создано команд', value: '2,341', icon: 'Shield', color: 'text-green-400' },
+              { label: 'Проведено матчей', value: '47,291', icon: 'Trophy', color: 'text-orange-400' },
+              { label: 'Средний рейтинг', value: '4,235', icon: 'Star', color: 'text-purple-400' }
+            ].map((stat, index) => (
+              <Card key={index} className="bg-gray-800/50 border-gray-700 text-center hover:scale-105 transition-transform duration-300">
+                <CardContent className="pt-6">
+                  <Icon name={stat.icon as any} size={32} className={`mx-auto mb-3 ${stat.color}`} />
+                  <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
+                  <div className="text-sm text-gray-400">{stat.label}</div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Game Selection */}
-      <div className="container mx-auto px-4 pb-8">
-        <Tabs value={selectedGame} onValueChange={(value) => setSelectedGame(value as Game)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8 bg-gray-800 border border-gray-700">
-            {Object.entries(gameThemes).map(([game, theme]) => (
-              <TabsTrigger 
-                key={game}
-                value={game} 
-                className={`data-[state=active]:${theme.primary} data-[state=active]:text-white transition-all duration-300 hover:scale-105`}
-              >
-                <span className="font-bold">{theme.name}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {Object.keys(gameThemes).map((game) => (
-            <TabsContent key={game} value={game}>
-              {/* Filters */}
-              <Card className="mb-8 bg-gray-800/50 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <Icon name="Filter" size={20} className="mr-2" />
-                    Фильтры поиска
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="text-sm text-gray-400 mb-2 block">Поиск по имени</label>
-                      <Input
-                        placeholder="Введите имя игрока..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-white"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm text-gray-400 mb-2 block">Минимальный рейтинг</label>
-                      <Input
-                        type="number"
-                        placeholder="Например: 3000"
-                        value={minRating}
-                        onChange={(e) => setMinRating(e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-white"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm text-gray-400 mb-2 block">Ранг</label>
-                      <Select value={selectedRank} onValueChange={setSelectedRank}>
-                        <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                          <SelectValue placeholder="Выберите ранг" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-700 border-gray-600">
-                          <SelectItem value="">Все ранги</SelectItem>
-                          {getRanksForGame(selectedGame).map(rank => (
-                            <SelectItem key={rank} value={rank} className="text-white hover:bg-gray-600">
-                              {rank}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex items-end">
-                      <Button 
-                        onClick={() => {
-                          setSearchTerm('');
-                          setMinRating('');
-                          setSelectedRank('');
-                        }}
-                        variant="outline"
-                        className="w-full bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                      >
-                        <Icon name="RotateCcw" size={16} className="mr-2" />
-                        Сбросить
-                      </Button>
+      {/* Chat Dialog */}
+      <Dialog open={chatOpen} onOpenChange={setChatOpen}>
+        <DialogContent className="sm:max-w-md bg-gray-800 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-3">
+              {selectedPlayer && (
+                <>
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback className={`${gameThemes[selectedPlayer.game].primary} text-white text-sm`}>
+                      {selectedPlayer.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  Чат с {selectedPlayer.name}
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <ScrollArea className="h-80 w-full rounded-md border border-gray-600 p-4 bg-gray-900">
+              <div className="space-y-3">
+                {messages.map((message) => (
+                  <div 
+                    key={message.id} 
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
+                      message.sender === 'user' 
+                        ? 'bg-primary text-white' 
+                        : 'bg-gray-700 text-gray-200'
+                    }`}>
+                      {message.text}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Players Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredPlayers.length > 0 ? (
-                  filteredPlayers.map((player) => (
-                    <PlayerCard key={player.id} player={player} />
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-12">
-                    <Icon name="UserX" size={48} className="mx-auto mb-4 text-gray-500" />
-                    <h3 className="text-xl text-gray-400 mb-2">Игроки не найдены</h3>
-                    <p className="text-gray-500">Попробуйте изменить критерии поиска</p>
-                  </div>
-                )}
+                ))}
               </div>
-            </TabsContent>
-          ))}
-        </Tabs>
-      </div>
-
-      {/* Stats Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[
-            { label: 'Активных игроков', value: '15,847', icon: 'Users', color: 'text-blue-400' },
-            { label: 'Создано команд', value: '2,341', icon: 'Shield', color: 'text-green-400' },
-            { label: 'Проведено матчей', value: '47,291', icon: 'Trophy', color: 'text-orange-400' },
-            { label: 'Средний рейтинг', value: '4,235', icon: 'Star', color: 'text-purple-400' }
-          ].map((stat, index) => (
-            <Card key={index} className="bg-gray-800/50 border-gray-700 text-center hover:scale-105 transition-transform duration-300">
-              <CardContent className="pt-6">
-                <Icon name={stat.icon as any} size={32} className={`mx-auto mb-3 ${stat.color}`} />
-                <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
-                <div className="text-sm text-gray-400">{stat.label}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </div>
+            </ScrollArea>
+            
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Напишите сообщение..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="bg-gray-700 border-gray-600 text-white resize-none"
+                rows={2}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+              />
+              <Button 
+                onClick={sendMessage}
+                className="bg-primary hover:bg-primary/90 text-white self-end"
+              >
+                <Icon name="Send" size={16} />
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
