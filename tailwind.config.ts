@@ -61,6 +61,28 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				game: {
+					dota: {
+						DEFAULT: '#DC2626',
+						secondary: '#7F1D1D',
+						bg: '#1A0A0A'
+					},
+					cs: {
+						DEFAULT: '#3B82F6',
+						secondary: '#F97316',
+						bg: '#0F1629'
+					},
+					valorant: {
+						DEFAULT: '#EC4899',
+						secondary: '#DC2626',
+						bg: '#1A0F1A'
+					},
+					pubg: {
+						DEFAULT: '#EA580C',
+						secondary: '#92400E',
+						bg: '#1A0F0A'
+					}
 				}
 			},
 			borderRadius: {
